@@ -4,6 +4,7 @@ import Control.Monad (mapM)
 import Data.Char
 
 newtype Letter = Letter { intFromLetter :: Int }
+type Letters = [Letter]
 
 letterFromInt x = Letter (x `mod` 26)
 
