@@ -1,10 +1,10 @@
-module Likelihood (Histogram, histogram, score, histFromFile) where
+module Likelihood (Histogram, histogram, score, histFromFile, defaultBytes) where
 
 import Data.Map (Map, fromList, fromListWith, findWithDefault)
 import qualified Data.ByteString.Lazy as B
 import Data.Word (Word8)
 
-type Histogram k = Map k Int
+type Histogram k = Map k Double
 
 
 histogram :: Ord k => [k] -> Histogram k
@@ -12,7 +12,7 @@ histogram = fromListWith (+) . map (\k -> (k,1))
 
 
 score :: Ord k => Histogram k -> [k] -> Double
-score m = sum . map (negate . log . fromIntegral . flip (findWithDefault 1) m)
+score m = sum . map (negate . log  . flip (findWithDefault 1) m)
 
 histFromFile f = B.readFile f >>= return . histogram . B.unpack
 
