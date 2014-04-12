@@ -41,19 +41,21 @@ match _  _              = True
 matches :: Partial -> Partial -> Bool
 matches (Partial a) (Partial b) = and $ zipWith match a b
 
-matchesMSB :: Int -> Partial -> Partial -> Bool
-matchesMSB bits (Partial a) (Partial b) = and (zipWith match 
-                                                (drop bits a) 
-						(drop bits b))
 fromKnown :: [Int] -> Partial
 fromKnown = Partial . map Just 
 
 known :: Partial -> Bool
 known = not . any isNothing . fromCorr
 
+exhaust :: Partial -> [[Int]]
 exhaust (Partial xs) = sequence [ (case x of
 	Nothing -> [0,1]
 	Just x -> [x]) | x <- xs]
+
+
+extend :: Partial -> Partial
+extend (Partial xs) = Partial (xs ++ [Nothing])
+
 
 combineOne :: Eq a => Maybe a -> Maybe a -> Maybe (Maybe a)
 combineOne a Nothing = Just a
@@ -62,13 +64,14 @@ combineOne (Just a) (Just b) | a == b    = Just (Just a)
                              | otherwise = Nothing
 
 combine :: Partial -> Partial -> Maybe Partial
-combine (Partial []) b = Just b
+combine (Partial []) b = Just (Partial [])
 combine a (Partial []) = Just a
 combine (Partial (a:as)) (Partial (b:bs)) = do
 	t <- combineOne a b	
 	Partial ts <- combine (Partial as) (Partial bs)
 	return $ Partial (t:ts)
 
+(><) :: MonadPlus m => Partial -> Partial -> m Partial
 a >< b = case combine a b of
 	Nothing -> mzero
 	Just a -> return a
@@ -109,6 +112,9 @@ tau x = tau' x 0 where
 	tau' x y | odd x     = y
 	         | otherwise = tau' (x `div` 2) (y+1)
 
+(>><) :: [Int] -> Partial -> [[Int]]
+x >>< y = (extend (fromKnown x) >< y) >>= exhaust
+
 
 breakKey n e (p,q,d,dp,dq) = do
 
@@ -118,22 +124,44 @@ breakKey n e (p,q,d,dp,dq) = do
 		[x] -> [(x,x)]
 		[x,y] -> [(x,y),(y,x)]
 
-	p0 <- p >< fromKnown [1]
-	q0 <- q >< fromKnown [1]
+	let p1 = [1]
+	let q1 = [1]
 	
-	let tk = tau k
-	let tkp = tau kp + 1
-	let tkq = tau kq + 1 
+	let tk = tau k 
+	let tkp = tau kp 
+	let tkq = tau kq  
 
-	lowDp0 <- exhaust (lsb tkp dp)
-	guard $ (e * fromBits lowDp0) `mod` (2^tkp) == 1
+	dp1 <- exhaust (lsb (tkp+1) dp)
+	guard $ (e * fromBits dp1) `mod` (2^(tkp+1)) == 1
 
-	dp0 <- dp >< fromKnown lowDp0
+	dq1 <- exhaust (lsb (tkq+1) dq)
+	guard $ (e * fromBits dq1) `mod` (2^(tkq+1)) == 1
 
-	lowDq0 <- exhaust (lsb tkq dq)
-	guard $ (e * fromBits lowDq0) `mod` (2^tkq) == 1
+	d1 <- exhaust (lsb (tk+1) d')
+	guard $ (e * fromBits d1) `mod` (2^(tk+1)) == 1
 
-	dq0 <- dq >< fromKnown lowDq0
+	let slice 1 = [(p1,q1,d1,dp1,dq1)]
+	    slice i = do
+	    	(p',q',d',dp',dq') <- slice (i-1)
+		p'' <- p' >>< p
+		let pv = fromBits p''
+		q'' <- q' >>< q
+		let qv = fromBits q''
+		guard $ (pv * qv - n) `mod` (2^i) == 0
 
-	return $ (p0,q0,d',dp0,dq0)
+		d'' <- d' >>< d
+		let dv = fromBits d''
+		guard $ (e * dv - (k*(n-pv-qv+1) + 1)) `mod` (2^(i+tk)) == 0
 
+		dp'' <- dp' >>< dp
+		let dpv = fromBits dp''
+		guard $ (e * dpv - (kp*(pv-1) + 1)) `mod` (2^(i+tkp)) == 0
+
+		dq'' <- dq' >>< dq
+		let dqv = fromBits dq''
+		guard $ (e * dqv - (kp*(qv-1) + 1)) `mod` (2^(i+tkp)) == 0
+
+		return (p'',q'',d'',dp'',dq'')
+	slice 2
+
+main = breakKey n e target
