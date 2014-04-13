@@ -54,8 +54,10 @@ euclid a b
 
 -- emod a e n = (a^e `mod` n)
 emod _ 0 _ = 1
-emod a e n | odd e     = (a * square (emod a (e `div` 2) n)) `mod` n
+emod a e n | e < 0 = error $ "emod cannot compute power < 0: " ++ show e
+           | odd e = (a * emod a (e-1) n) `mod` n
            | otherwise = square (emod a (e `div` 2) n) `mod` n
+
 
 newton f t a b | a == b = Left a
 	       | otherwise = let mid = (a + b) `div` 2 in

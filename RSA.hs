@@ -1,6 +1,8 @@
 
 module RSA where
 
+import Primes
+
 type Exponent = Integer
 type Modulus  = Integer
 type Prime    = Integer
@@ -26,11 +28,6 @@ decrypt (Params (n,e) (p,q)) c = decrypt (Private (n,d `mod` phi)) c where
     (_,d,1) = egcd phi e
 
 square x = x*x
-
-emod _ 0 _ = 1
-emod a e n | e < 0 = error $ "emod cannot compute power < 0: " ++ show e 
-           | odd e = (a * emod a (e-1) n) `mod` n
-           | otherwise = square (emod a (e `div` 2) n) `mod` n
 
 
 egcd a b = egcd' (1,0,a) (0,1,b) where
