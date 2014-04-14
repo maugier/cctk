@@ -1,5 +1,6 @@
 module PartialRSA where
 
+import Control.Arrow
 import Control.Monad
 import Data.Maybe
 import Digits
@@ -42,15 +43,14 @@ corruptedDQ = fromPartialHex "1 : 9:47:8 :  :  :  : 3:  :  :  :6 :  :  :0 :e :e 
 target :: PartialKey
 target = (corruptedP, corruptedQ, corruptedD, corruptedDP, corruptedDQ)
 
+fromKnownInteger :: Integer -> PartialBits
+fromKnownInteger = fromKnown . toDigits 2
 
-approxD n e k = (k * (n+1) + 1) `div` e
 
-breakK :: Integer -> Integer -> PartialBits -> [(Integer,PartialBits)]
-breakK n e cd = [ (k,d)  | k <- [1..(e-1)] 
-                         , let d' = approxD n e k
-			 , let dbits' = fromKnown . toDigits 2 $ d'
-			 , d <- cd >< msb l dbits'] where
+breakK :: Integer -> Integer -> PartialBits -> [Integer]
+breakK n e cd = [ k | k <- [1..(e-1)] , cd >?< msb l (fromKnownInteger (approx k)) ] where
 	l = (length (fromPartial cd) `div` 2) + 2
+	approx k = (k * (n+1) + 1) `div` e
 
 k = 4695
 
@@ -63,54 +63,42 @@ tau x = tau' x 0 where
 
 exhaustBit = exhaust (0,1)
 
-(>><) :: [Int] -> PartialBits -> [[Int]]
-x >>< y = (extend (fromKnown x) >< y) >>= exhaustBit
+(>><) :: [Int] -> PartialBits -> [([Int],Integer)]
+x >>< y = (extend (fromKnown x) >< y) >>= map (id &&& fromDigits 2) . exhaustBit
 
 breakKey :: Integer -> Integer -> PartialKey -> [(Integer,Integer)]
 breakKey n e (p,q,d,dp,dq) = do
 
-	(k,d') <- breakK n e d
+	k <- breakK n e d
 
 	(kp,kq) <- case breakKPQ n e k of
 		[x] -> [(x,x)]
 		[x,y] -> [(x,y),(y,x)]
 
 	let p1 = [1]
-	let q1 = [1]
+	    q1 = [1]
+            d1 = [1]
+            dp1 = [1]
+            dq1 = [1]
 	
-	let tk = tau k 
-	let tkp = tau kp 
-	let tkq = tau kq  
-
-	dp1 <- exhaustBit (lsb (tkp+1) dp)
-	guard $ (e * fromBits dp1) `mod` (2^(tkp+1)) == 1
-
-	dq1 <- exhaustBit (lsb (tkq+1) dq)
-	guard $ (e * fromBits dq1) `mod` (2^(tkq+1)) == 1
-
-	d1 <- exhaustBit (lsb (tk+1) d')
-	guard $ (e * fromBits d1) `mod` (2^(tk+1)) == 1
-
 	let slice 1 = [(p1,q1,d1,dp1,dq1)]
 	    slice i = do
+                let m = 2^i
 	    	(p',q',d',dp',dq') <- slice (i-1)
-		p'' <- p' >>< p
-		let pv = fromBits p''
-		q'' <- q' >>< q
-		let qv = fromBits q''
+
+		(p'', pv) <- p' >>< p
+		(q'', qv) <- q' >>< q
+
 		guard $ (pv * qv - n) `mod` (2^i) == 0
 
-		d'' <- d' >>< d
-		let dv = fromBits d''
-		guard $ (e * dv - (k*(n-pv-qv+1) + 1)) `mod` (2^(i+tk)) == 0
+		(d'',dv) <- d' >>< d
+		guard $ (e * dv - (k*(n-pv-qv+1) + 1)) `mod` m == 0
 
-		dp'' <- dp' >>< dp
-		let dpv = fromBits dp''
-		guard $ (e * dpv - (kp*(pv-1) + 1)) `mod` (2^(i+tkp)) == 0
+		(dp'',dpv) <- dp' >>< dp
+		guard $ (e * dpv - (kp*(pv-1) + 1)) `mod` m  == 0
 
-		dq'' <- dq' >>< dq
-		let dqv = fromBits dq''
-		guard $ (e * dqv - (kq*(qv-1) + 1)) `mod` (2^(i+tkq)) == 0
+		(dq'',dqv) <- dq' >>< dq
+		guard $ (e * dqv - (kq*(qv-1) + 1)) `mod` m == 0
 
 		return (p'',q'',d'',dp'',dq'')
 	(p,q,_,_,_) <- slice (length (fromPartial p))
