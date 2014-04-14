@@ -62,3 +62,5 @@ a >< b = case combine a b of
 	Just a -> return a
 
 
+(>?<) :: Eq a => Partial a -> Partial a -> Bool
+(>?<) = matches
