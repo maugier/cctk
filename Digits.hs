@@ -6,11 +6,11 @@ import Data.List
 
 frac x = x - fromIntegral (floor x)
 
-fromDigits :: Integral a => a -> [a] -> a
-fromDigits base = sum . zipWith (*) (iterate (*base) 1)
+fromDigits :: (Integral a, Num b) => b -> [a] -> b
+fromDigits base = sum . zipWith (*) (iterate (*base) 1) . map fromIntegral
 
-toDigits :: Integral a => a -> a -> [a]
-toDigits base = unfoldr f where
+toDigits :: (Integral a, Num b) => a -> a -> [b]
+toDigits base = map fromIntegral . unfoldr f where
     f 0 = Nothing
     f x = Just (x `mod` base, x `div` base)
 

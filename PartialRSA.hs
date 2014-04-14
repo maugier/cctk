@@ -43,12 +43,12 @@ target :: PartialKey
 target = (corruptedP, corruptedQ, corruptedD, corruptedDP, corruptedDQ)
 
 
-dFromK n e k = (k * (n+1) + 1) `div` e
+approxD n e k = (k * (n+1) + 1) `div` e
 
 breakK :: Integer -> Integer -> PartialBits -> [(Integer,PartialBits)]
 breakK n e cd = [ (k,d)  | k <- [1..(e-1)] 
-                         , let d' = dFromK n e k
-			 , let dbits' = fromKnown . map fromIntegral . toDigits 2 $ d'
+                         , let d' = approxD n e k
+			 , let dbits' = fromKnown . toDigits 2 $ d'
 			 , d <- cd >< msb l dbits'] where
 	l = (length (fromPartial cd) `div` 2) + 2
 
@@ -114,7 +114,7 @@ breakKey n e (p,q,d,dp,dq) = do
 
 		return (p'',q'',d'',dp'',dq'')
 	(p,q,_,_,_) <- slice (length (fromPartial p))
-	return (fromDigits 2 (map fromIntegral p), fromDigits 2 (map fromIntegral q))
+	return (fromDigits 2  p, fromDigits 2 q)
 
 
 main = breakKey n e target
