@@ -21,5 +21,5 @@ breakOneKey :: Histogram Word8 -> [Word8] -> Word8
 breakOneKey h cs = best $ M.fromListWith (+) [ (k, product [ h M.! (k `xor` c) | c <- cs ]) | k <- [0..255] ]
 
 
-breakNKey :: Int -> [Word8] -> [Word8]
-breakNKey n = map (breakOneKey defaultBytes) . transpose . chunk n
+breakNKey :: Histogram Word8 -> Int -> [Word8] -> [Word8]
+breakNKey h n = map (breakOneKey h) . transpose . chunk n
