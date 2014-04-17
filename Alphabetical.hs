@@ -1,20 +1,25 @@
 module Alphabetical where
 
 import Control.Monad (mapM)
+import Control.Monad.Instances
 import Data.Char
 
 newtype Letter = Letter { intFromLetter :: Int }
+	deriving (Eq,Ord)
+
 type Letters = [Letter]
 
 letterFromInt x = Letter (x `mod` 26)
 
-letterFromChar :: Char -> Maybe Letter
-letterFromChar x | ord x >= ord 'A' && ord x <= ord 'Z' = Just (Letter (ord x - ord 'A'))
+letterFromChar :: Char -> Either Char Letter
+letterFromChar x | ord x >= ord 'A' && ord x <= ord 'Z' = Right (Letter (ord x - ord 'A'))
                  | ord x >= ord 'a' && ord x <= ord 'z' = letterFromChar (toUpper x)
-                 | otherwise = Nothing
+                 | otherwise = Left x
 
 letter = letterFromChar
-letters = mapM letter
+letters = map letter
+
+fromLetters =  map (either id charFromLetter)
 
 charFromLetter :: Letter -> Char
 charFromLetter = chr . (ord 'A' +) . intFromLetter
