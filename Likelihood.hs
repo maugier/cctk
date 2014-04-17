@@ -1,5 +1,5 @@
-module Likelihood (Histogram, histogram, score, histFromFile, defaultBytes,
-                   best, bests, normalize) where
+module Likelihood (Histogram, histogram, histFreq, score, histFromFile, defaultBytes,
+                   best, bests, normalize, entropy) where
 
 import Data.Char
 import qualified Data.Map as M
@@ -15,7 +15,12 @@ type Histogram k = Map k Double
 histogram :: Ord k => [k] -> Histogram k
 histogram = fromListWith (+) . map (\k -> (k,1))
 
+histFreq :: Ord k => [(k,Double)] -> Histogram k
+histFreq = normalize . fromList
+
 normalize n = M.map (/ maximum (M.elems n)) n 
+
+normalize' n = M.map (/ sum (M.elems n)) n
 
 score :: Ord k => Histogram k -> [k] -> Double
 score m = sum . map (negate . log  . flip (findWithDefault 1) m)
@@ -42,3 +47,6 @@ infixl 4 |$|
 (|*|) :: (Ord a, Ord b) => Histogram a -> Histogram b -> Histogram (a,b)
 xs |*| ys = normalize $ fromListWith (+) [ ((x,y), px*py) | (x,px) <- toList xs, (y,py) <- toList ys ]
 infixl 4 |*|
+
+entropy :: Histogram a -> Double
+entropy h = 0 - sum [ v * log v  | (_,v) <- toList (normalize' h) ] / log 2
