@@ -8,13 +8,18 @@ type Letters = [Letter]
 
 letterFromInt x = Letter (x `mod` 26)
 
-letterFromChar :: Char -> Maybe Letter
-letterFromChar x | ord x >= ord 'A' && ord x <= ord 'Z' = Just (Letter (ord x - ord 'A'))
+letterFromChar :: Char -> Either Char Letter
+letterFromChar x | ord x >= ord 'A' && ord x <= ord 'Z' = Right (Letter (ord x - ord 'A'))
                  | ord x >= ord 'a' && ord x <= ord 'z' = letterFromChar (toUpper x)
-                 | otherwise = Nothing
+                 | otherwise = Left x
 
-letter = letterFromChar
-letters = mapM letter
+letter k = let Right x = letterFromChar k in x
+letters = map letterFromChar
+
+unletter (Left c) = c
+unletter (Right (Letter k)) = chr (ord 'A' + k)
+
+unletters = map unletter
 
 charFromLetter :: Letter -> Char
 charFromLetter = chr . (ord 'A' +) . intFromLetter

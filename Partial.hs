@@ -1,5 +1,6 @@
 module Partial where
 
+import Control.Applicative
 import Control.Monad
 import Data.Maybe
 import Data.Monoid
@@ -16,6 +17,9 @@ instance Monoid (Partial a) where
 	mappend (Partial a) (Partial b) = Partial (mappend a b)
 	mconcat = Partial . mconcat . map fromPartial
 
+instance Functor Partial where
+	fmap f (Partial xs) = Partial ((fmap (fmap f)) xs)
+
 lsb n (Partial xs) = Partial (take n xs)
 msb n (Partial xs) = Partial (replicate n Nothing ++ drop n xs)
 
@@ -31,6 +35,10 @@ fromKnown = Partial . map Just
 
 known :: Partial a -> Bool
 known = not . any isNothing . fromPartial
+
+unknown = Partial [Nothing]
+
+unknowns = Partial . flip replicate Nothing
 
 exhaust :: Enum a => (a,a) -> Partial a -> [[a]]
 exhaust (a,b) (Partial xs) = sequence [ (case x of
@@ -64,3 +72,6 @@ a >< b = case combine a b of
 
 (>?<) :: Eq a => Partial a -> Partial a -> Bool
 (>?<) = matches
+
+zipWithPartial :: (a -> b -> c) -> Partial a -> Partial b -> Partial c
+zipWithPartial f (Partial as) (Partial bs) = Partial (zipWith (liftM2 f) as bs)
