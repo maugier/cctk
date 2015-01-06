@@ -16,10 +16,13 @@ letterFromChar x | ord x >= ord 'A' && ord x <= ord 'Z' = Right (Letter (ord x -
                  | ord x >= ord 'a' && ord x <= ord 'z' = letterFromChar (toUpper x)
                  | otherwise = Left x
 
-letter = letterFromChar
-letters = map letter
+letter k = let Right x = letterFromChar k in x
+letters = map letterFromChar
 
-fromLetters =  map (either id charFromLetter)
+unletter (Left c) = c
+unletter (Right (Letter k)) = chr (ord 'A' + k)
+
+unletters = map unletter
 
 charFromLetter :: Letter -> Char
 charFromLetter = chr . (ord 'A' +) . intFromLetter

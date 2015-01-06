@@ -1,4 +1,4 @@
-module Likelihood (Histogram, histogram, histFreq, score, histFromFile, defaultBytes,
+module Likelihood (Histogram, histogram, score, histFromFile, defaultBytes,
                    best, bests, normalize, entropy) where
 
 import Data.Char
@@ -49,4 +49,8 @@ xs |*| ys = normalize $ fromListWith (+) [ ((x,y), px*py) | (x,px) <- toList xs,
 infixl 4 |*|
 
 entropy :: Histogram a -> Double
+<<<<<<< HEAD
 entropy h = 0 - sum [ v * log v  | (_,v) <- toList (normalize' h) ] / log 2
+=======
+entropy h = 0 - sum [ p * log p | p <- M.elems (normalize' h) ] / log 2
+>>>>>>> 289b90c4d536b025381905e8b631751c8a89e22c
