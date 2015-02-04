@@ -1,3 +1,5 @@
+module Combinatorics where
+
 pascal = iterate (\l -> zipWith (+) (0:l) (l++[0])) [1]
 
 facs = scanl (*) 1 [1..]
