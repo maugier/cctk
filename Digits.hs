@@ -1,6 +1,6 @@
 module Digits (fromDigits
               ,toDigits
-	      ,expand) where
+              ,expand) where
 
 import Data.List
 
