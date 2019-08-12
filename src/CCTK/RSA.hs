@@ -1,43 +1,66 @@
 
-module RSA where
+module CCTK.RSA (
+    encrypt,
+    decrypt,
+    genParameters,
+    genKeys,
+    makeKeys,
+) where
 
-import Primes
+import CCTK.RandomNatural
+import Control.Applicative
+import Control.Monad.Random
+import Math.NumberTheory.Primes
+import Math.NumberTheory.Moduli
+import GHC.Natural
 
+type Modulus = Natural
 type Exponent = Integer
-type Modulus  = Integer
-type Prime    = Integer
-type DecExponent = Integer
-type Cleartext = Integer
-type Ciphertext = Integer
 
-type Key    = (Modulus, Exponent)
-type Params = (Prime, Prime)
+type Parameters = (Prime Natural, Prime Natural)
 
-data PrivateKey = PrivateKey (Maybe Modulus) Exponent (Maybe Prime) (Maybe Prime) (Maybe DecExponent)
-	deriving Show
+type Public = (Exponent, Modulus)
+type Private = (Exponent, Modulus)
 
 
+encrypt :: Public -> Integer -> Integer
+encrypt (e,n) m = case m `modulo` n of SomeMod m -> getVal (powMod m e)
 
-public :: PrivateKey -> Key
-public (PrivateKey (Just n) e _ _ _) = (n,e)
-public p = public (computePrivate p)
+decrypt :: Private -> Integer -> Integer
+decrypt = encrypt
 
-
-computePrivate :: PrivateKey -> PrivateKey
-computePrivate p@(PrivateKey (Just _) _ (Just _) (Just _) (Just _)) = p
-computePrivate (PrivateKey Nothing e (Just p) (Just q) d) = computePrivate (PrivateKey (Just (p*q)) e (Just p) (Just q) d)
-computePrivate (PrivateKey n e (Just p) (Just q) Nothing) = computePrivate (PrivateKey n e (Just p) (Just q) (Just d)) where
-    phi      = (p-1)*(q-1)
-    (_,d',1) = euclid phi e
-    d        = if d' > 0 then d' else d' + phi
+genParameters :: MonadRandom m => Int -> m Parameters
+genParameters bits = do
+    p <- randomPrime bits
+    q <- randomPrime bits
+    return (p,q)
 
 
-encrypt :: Key -> Cleartext -> Ciphertext
-encrypt (n,e) m = emod m e n
+groupOrder :: Parameters -> Natural
+groupOrder (p, q) = (unPrime p - 1)*(unPrime q - 1)
 
-decrypt :: PrivateKey -> Ciphertext -> Cleartext
-decrypt (PrivateKey (Just n) _ _ _ (Just d)) c      = emod c d n
-decrypt p c = decrypt (computePrivate p) c
+randomPrime :: MonadRandom m => Int ->  m (Prime Natural)
+randomPrime bits = go where
+    range = (2^(bits-1), 2^bits-1) 
+    go = do
+        p <- getRandomR range
+        case isPrime p of
+            Just p' -> return p'
+            Nothing -> go
 
+makeKeys :: Parameters -> Exponent -> Maybe (Public, Private)
+makeKeys pq@(p,q) e =
+    case e `modulo` groupOrder pq of
+        SomeMod e' -> fromD . getVal <$> invertMod e'
+    where
+        n = unPrime p * unPrime q
+        public = (e,n)
+        fromD d = (private, public) where
+            private = (d,n)
 
-
+genKeys :: MonadRandom m => Int -> Exponent -> m (Public, Private)
+genKeys bits e = do
+    param <- genParameters bits
+    case makeKeys param e of
+        Just pair -> return pair
+        Nothing -> genKeys bits e
