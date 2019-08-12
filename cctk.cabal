@@ -55,7 +55,8 @@ library
                    CCTK.Partial.RSA,
                    CCTK.RandomNatural,
                    CCTK.RC4,
-                   CCTK.RSA
+                   CCTK.RSA,
+                   CCTK.Shanks
   
   -- Modules included in this library but not exported.
   -- other-modules:       

@@ -1,4 +1,7 @@
-module Merge where
+module CCTK.Merge (
+    merge, 
+    merge'
+) where
 
 import Data.List (sortBy)
 import Data.Ord (comparing)
@@ -7,9 +10,9 @@ import Data.Ord (comparing)
 
 merge :: Ord k => [(k,a)] -> [(k,b)] -> [(k,a,b)]
 merge aa@((ka,a):as) bb@((kb,b):bs) = case compare ka kb of
-	LT -> merge as bb
-	GT -> merge aa bs
-	EQ -> (ka,a,b) : merge as bs
+    LT -> merge as bb
+    GT -> merge aa bs
+    EQ -> (ka,a,b) : merge as bs
 merge _ _ = []
 
 -- Try to factor this code. See how the typechecker bites you in the ass.

@@ -5,17 +5,17 @@
 
 -}
 
-module Shanks where
+module CCTK.Shanks where
 
-import Group
-import Merge (merge')
+import CCTK.Group
+import CCTK.Merge (merge')
 
 shanks :: (Group g, Ord g) => Integer -> g -> g -> Maybe Integer
 shanks k g y = let
-		giantStep = ceiling . sqrt $ (fromInteger k :: Double)
-		giant = g |^| negate giantStep
-		babies = zip (iterate (|*| g)     i) [0..giantStep]
-		giants = zip (iterate (|*| giant) y) [0..giantStep]
-	in case merge' babies giants of
-		[] -> Nothing
-		(_,a,b):_ -> Just $ a + giantStep * b
+        giantStep = ceiling . sqrt $ (fromInteger k :: Double)
+        giant = g |^| negate giantStep
+        babies = zip (iterate (<> g)     i) [0..giantStep]
+        giants = zip (iterate (<> giant) y) [0..giantStep]
+    in case merge' babies giants of
+        [] -> Nothing
+        (_,a,b):_ -> Just $ a + giantStep * b
