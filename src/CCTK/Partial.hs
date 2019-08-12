@@ -1,4 +1,4 @@
-module Partial where
+module CCTK.Partial where
 
 import Control.Applicative
 import Control.Monad
@@ -8,17 +8,17 @@ import Data.Monoid
 newtype Partial a = Partial { fromPartial :: [Maybe a] }
 
 instance Show a => Show (Partial a) where
-	show (Partial c) = concatMap show' (reverse c) where
-		show' Nothing = "?"
-		show' (Just x) = show x
+    show (Partial c) = concatMap show' (reverse c) where
+        show' Nothing = "?"
+        show' (Just x) = show x
 
 instance Monoid (Partial a) where
-	mempty = Partial []
-	mappend (Partial a) (Partial b) = Partial (mappend a b)
-	mconcat = Partial . mconcat . map fromPartial
+    mempty = Partial []
+    mappend (Partial a) (Partial b) = Partial (mappend a b)
+    mconcat = Partial . mconcat . map fromPartial
 
 instance Functor Partial where
-	fmap f (Partial xs) = Partial ((fmap (fmap f)) xs)
+    fmap f (Partial xs) = Partial ((fmap (fmap f)) xs)
 
 lsb n (Partial xs) = Partial (take n xs)
 msb n (Partial xs) = Partial (replicate n Nothing ++ drop n xs)
@@ -42,8 +42,8 @@ unknowns = Partial . flip replicate Nothing
 
 exhaust :: Enum a => (a,a) -> Partial a -> [[a]]
 exhaust (a,b) (Partial xs) = sequence [ (case x of
-	Nothing -> enumFromTo a b
-	Just x -> [x]) | x <- xs]
+    Nothing -> enumFromTo a b
+    Just x -> [x]) | x <- xs]
 
 
 extend :: Partial a -> Partial a
@@ -60,14 +60,14 @@ combine :: Eq a => Partial a -> Partial a -> Maybe (Partial a)
 combine (Partial []) b = Just (Partial [])
 combine a (Partial []) = Just a
 combine (Partial (a:as)) (Partial (b:bs)) = do
-	t <- combineOne a b	
-	Partial ts <- combine (Partial as) (Partial bs)
-	return $ Partial (t:ts)
+    t <- combineOne a b 
+    Partial ts <- combine (Partial as) (Partial bs)
+    return $ Partial (t:ts)
 
 (><) :: (Eq a, MonadPlus m) => Partial a -> Partial a -> m (Partial a)
 a >< b = case combine a b of
-	Nothing -> mzero
-	Just a -> return a
+    Nothing -> mzero
+    Just a -> return a
 
 
 (>?<) :: Eq a => Partial a -> Partial a -> Bool

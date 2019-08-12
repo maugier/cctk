@@ -1,11 +1,11 @@
-module PartialRSA where
+module CCTK.Partial.RSA where
 
 import Control.Arrow
 import Control.Monad
 import Data.Maybe
-import Digits
-import Partial
-import RSA
+import CCTK.Digits
+import CCTK.Partial
+import CCTK.RSA
 
 type PartialBits = Partial Int
 type Pentuple a = (a,a,a,a,a)
@@ -18,10 +18,10 @@ fromHex = read . ("0x"++) . filter hexDigit
 
 fromPartialHex :: String -> Partial Int
 fromPartialHex = ((Partial . reverse) .) . concatMap $ \x -> case x of
-	' '            -> [Nothing,Nothing,Nothing,Nothing]
-        c | hexDigit c -> map Just . reverse 
-	                  . expand 4 . toDigits 2 . fromIntegral . fromHex . (:[]) $ c
-        _              -> [] 
+    ' '            -> [Nothing,Nothing,Nothing,Nothing]
+    c | hexDigit c -> map Just . reverse 
+                      . expand 4 . toDigits 2 . fromIntegral . fromHex . (:[]) $ c
+    _              -> [] 
 
 fromPartialBits (Partial xs) = fmap (fromDigits 2) $ sequence xs 
 
@@ -49,17 +49,17 @@ fromKnownInteger = fromKnown . toDigits 2
 
 breakK :: Integer -> Integer -> PartialBits -> [Integer]
 breakK n e cd = [ k | k <- [1..(e-1)] , cd >?< msb l (fromKnownInteger (approx k)) ] where
-	l = (length (fromPartial cd) `div` 2) + 2
-	approx k = (k * (n+1) + 1) `div` e
+    l = (length (fromPartial cd) `div` 2) + 2
+    approx k = (k * (n+1) + 1) `div` e
 
 k = 4695
 
 breakKPQ n e k = [ kp | kp <- [1..(e-1)], (kp*kp - kp*c - k) `mod` e == 0 ] 
-	where c = k*(n-1)+1
+    where c = k*(n-1)+1
 
 tau x = tau' x 0 where
-	tau' x y | odd x     = y
-	         | otherwise = tau' (x `div` 2) (y+1)
+    tau' x y | odd x     = y
+             | otherwise = tau' (x `div` 2) (y+1)
 
 exhaustBit = exhaust (0,1)
 
@@ -69,40 +69,41 @@ x >>< y = (extend (fromKnown x) >< y) >>= map (id &&& fromDigits 2) . exhaustBit
 breakKey :: Integer -> Integer -> PartialKey -> [(Integer,Integer)]
 breakKey n e (p,q,d,dp,dq) = do
 
-	k <- breakK n e d
+    k <- breakK n e d
 
-	(kp,kq) <- case breakKPQ n e k of
-		[x] -> [(x,x)]
-		[x,y] -> [(x,y),(y,x)]
+    (kp,kq) <- case breakKPQ n e k of
+        [x] -> [(x,x)]
+        [x,y] -> [(x,y),(y,x)]
 
-	let p1 = [1]
-	    q1 = [1]
-            d1 = [1]
-            dp1 = [1]
-            dq1 = [1]
-	
-	let slice 1 = [(p1,q1,d1,dp1,dq1)]
-	    slice i = do
-                let m = 2^i
-	    	(p',q',d',dp',dq') <- slice (i-1)
+    let p1 = [1]
+        q1 = [1]
+        d1 = [1]
+        dp1 = [1]
+        dq1 = [1]
+    
+    let slice 1 = [(p1,q1,d1,dp1,dq1)]
+        slice i = do
+            let m = 2^i
+            (p',q',d',dp',dq') <- slice (i-1)
 
-		(p'', pv) <- p' >>< p
-		(q'', qv) <- q' >>< q
+            (p'', pv) <- p' >>< p
+            (q'', qv) <- q' >>< q
 
-		guard $ (pv * qv - n) `mod` (2^i) == 0
+            guard $ (pv * qv - n) `mod` (2^i) == 0
 
-		(d'',dv) <- d' >>< d
-		guard $ (e * dv - (k*(n-pv-qv+1) + 1)) `mod` m == 0
+            (d'',dv) <- d' >>< d
+            guard $ (e * dv - (k*(n-pv-qv+1) + 1)) `mod` m == 0
 
-		(dp'',dpv) <- dp' >>< dp
-		guard $ (e * dpv - (kp*(pv-1) + 1)) `mod` m  == 0
+            (dp'',dpv) <- dp' >>< dp
+            guard $ (e * dpv - (kp*(pv-1) + 1)) `mod` m  == 0
 
-		(dq'',dqv) <- dq' >>< dq
-		guard $ (e * dqv - (kq*(qv-1) + 1)) `mod` m == 0
+            (dq'',dqv) <- dq' >>< dq
+            guard $ (e * dqv - (kq*(qv-1) + 1)) `mod` m == 0
 
-		return (p'',q'',d'',dp'',dq'')
-	(p,q,_,_,_) <- slice (length (fromPartial p))
-	return (fromDigits 2  p, fromDigits 2 q)
+            return (p'',q'',d'',dp'',dq'')
+
+    (p,q,_,_,_) <- slice (length (fromPartial p))
+    return (fromDigits 2  p, fromDigits 2 q)
 
 
 main = breakKey n e target
