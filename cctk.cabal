@@ -49,7 +49,9 @@ cabal-version:       >=1.10
 library
   -- Modules exported by the library.
  -- exposed-modules:     Digits, Xor, Primes, Substitution, Jacobi, Combinatorics, HMAC, MultGroup, Util, RC4, Merge, Group, Partial, CFrac, Edwards, Alphabetical, Likelihood, Polynom, Shanks, Wiener, RSA, PartialRSA, Vigenere, Language, Montgomery, SymbolicField, RC4.Break, RC4.ST, Group.Multiplicative
-  exposed-modules: CCTK.Partial,
+  exposed-modules: CCTK.ContinuedFraction
+                   CCTK.Digits,
+                   CCTK.Partial,
                    CCTK.Partial.RSA,
                    CCTK.RandomNatural,
                    CCTK.RC4,

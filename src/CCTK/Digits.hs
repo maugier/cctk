@@ -1,6 +1,6 @@
-module Digits (fromDigits
-              ,toDigits
-              ,expand) where
+module CCTK.Digits (fromDigits
+                   ,toDigits
+                   ,expand) where
 
 import Data.List
 
