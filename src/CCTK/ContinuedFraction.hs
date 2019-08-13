@@ -27,8 +27,8 @@ toCFrac x = let
         0 -> CFrac [xf]
         n -> CFrac (xf : unCFrac (toCFrac (1/xr)))
     
-convergents :: (Integral a) => CFrac a -> [Ratio a]
-convergents = map (\(h,_,k,_) -> h % k) . tail . scanl (\(h,h',k,k') a -> (a*h+h', h, a*k+k', k)) (1,0,0,1) . unCFrac 
+convergents :: (RealFrac a, Integral b) => a -> [Ratio b]
+convergents = map (\(h,_,k,_) -> h % k) . tail . scanl (\(h,h',k,k') a -> (a*h+h', h, a*k+k', k)) (1,0,0,1) . unCFrac . toCFrac
 
 
 cFracSqrt :: Integer -> CFrac Integer

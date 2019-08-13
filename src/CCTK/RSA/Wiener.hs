@@ -1,6 +1,6 @@
-module Wiener where
+module CCTK.RSA.Wiener (wiener) where
 
-import CFrac
+import CCTK.ContinuedFraction
 import Data.Maybe
 import GHC.Real
 import Math.NumberTheory.Powers.Squares
@@ -8,7 +8,9 @@ import Math.NumberTheory.Powers.Squares
 type Exponent = Integer
 type Modulus = Integer
 
--- wiener n e = (p,q) such that p*q = n
+-- | Perform Wiener's attack on RSA.
+-- Given an RSA modulus n, and a large exponent e known to correspond to
+-- a small d value, attempt to factor n into two primes.
 wiener :: Modulus -> Exponent -> (Integer, Integer)
 wiener n e = head [ (p,q) | (k :% d) <- convergents (e % n)
                         , k /= 0

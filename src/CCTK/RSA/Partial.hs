@@ -1,4 +1,4 @@
-module CCTK.Partial.RSA where
+module CCTK.RSA.Partial where
 
 import Control.Arrow
 import Control.Monad
