@@ -8,14 +8,14 @@ module CCTK.RainbowTable (
     effectiveness,
 ) where
 
-import CCTK.Digits
-
+import Control.Parallel.Strategies
 import Control.Monad.Random
-
 import Data.List (foldl', tails, unfoldr)
 import Data.Map (Map)
 import qualified Data.Map as M
 import Data.Maybe (listToMaybe)
+import Data.Serialize
+import Data.ByteString.Lazy as LBS (readFile, writeFile)
 
 import System.Random
 
@@ -51,17 +51,18 @@ crack (Table h rs t) x =
 --
 -- If the list of reducers is empty, the table is equivalent to a full dictionary.
 build' :: Ord h => (c -> h) -> [h -> c] -> [c] -> Table h c
-build' h rs cs = Table h rs (M.fromList [ ((h . chain h rs) c ,c ) | c <- cs ])
+build' h rs = Table h rs . M.fromList . map (\c -> (chain' c, c)) where
+    chain' = h . chain h rs
 
--- |- Iteratively build a table from a single seed.
+-- |- Iteratively build a table from a single seed. The first reducer is used to generate chains.
 build1 :: Ord h => (c -> h) -> [h -> c] -> Int -> c -> Table h c
 build1 h (r:rs) rows = Table h rs . M.fromList . take rows . unfoldr step where
     step c = let y = (h . chain h rs) c in Just ((y,c), r y)
 
 
--- |- Build a table of the desired size from random seeds
-build :: (Ord h, Random c, MonadRandom m) => (c -> h) -> [h -> c] -> (Int, Int) -> m (Table h c)
-build = undefined
+-- |- Build a table of the desired size, using the standard RNG
+build :: (RandomGen g, Ord h, Random c) => (c -> h) -> [h -> c] -> Int -> g -> Table h c
+build h rs rows = build' h rs . take rows . randoms
 
 
 effectiveness :: (Ord h, Random c) => Table h c -> IO Int
@@ -72,3 +73,18 @@ effectiveness t = measure 100 0 where
         case crack t (hash t x) of
             Just _ -> measure (k-1) (n+1)
             _      -> measure (k-1) n
+
+
+save :: (Serialize h, Ord h, Serialize c) => FilePath -> Table h c -> IO ()
+save path = LBS.writeFile path . encodeLazy . table
+
+
+load :: (Serialize h, Ord h, Serialize c) => (c -> h) -> [h -> c] -> FilePath -> IO (Either String (Table h c))
+load h rs file = load' . decodeLazy <$> LBS.readFile file where
+    load' (Left e) = Left $ "Cannot decode: " ++ e
+    load' (Right t) =
+        case M.lookupMin t of
+            Nothing -> Left "Loaded an empty table"
+            Just (y, c)
+                | y == (h . chain h rs) c -> Right $ Table h rs t
+                | otherwise -> Left "Incorrect algorithms for table"
