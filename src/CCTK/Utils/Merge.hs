@@ -1,4 +1,4 @@
-module CCTK.Merge (
+module CCTK.Utils.Merge (
     merge, 
     merge'
 ) where

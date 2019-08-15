@@ -6,6 +6,8 @@ module CCTK.RainbowTable (
     crack,
     shape,
     effectiveness,
+    load,
+    save
 ) where
 
 import Control.Parallel.Strategies

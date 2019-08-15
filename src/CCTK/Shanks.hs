@@ -9,7 +9,7 @@
 module CCTK.Shanks where
 
 import CCTK.Group
-import CCTK.Merge (merge')
+import CCTK.Utils.Merge (merge')
 import Math.NumberTheory.Powers.Squares
 
 shanks :: (Group g, Ord g) => Integer -> g -> g -> Maybe Integer

@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving, DeriveFunctor #-}
+
 module CCTK.Partial where
 
 import Control.Applicative
@@ -6,19 +8,12 @@ import Data.Maybe
 import Data.Monoid
 
 newtype Partial a = Partial { fromPartial :: [Maybe a] }
+    deriving (Functor, Semigroup, Monoid)
 
 instance Show a => Show (Partial a) where
     show (Partial c) = concatMap show' (reverse c) where
         show' Nothing = "?"
         show' (Just x) = show x
-
-instance Monoid (Partial a) where
-    mempty = Partial []
-    mappend (Partial a) (Partial b) = Partial (mappend a b)
-    mconcat = Partial . mconcat . map fromPartial
-
-instance Functor Partial where
-    fmap f (Partial xs) = Partial ((fmap (fmap f)) xs)
 
 lsb n (Partial xs) = Partial (take n xs)
 msb n (Partial xs) = Partial (replicate n Nothing ++ drop n xs)
