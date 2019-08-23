@@ -53,7 +53,7 @@ crack (Table h rs t) x =
 --
 -- If the list of reducers is empty, the table is equivalent to a full dictionary.
 build' :: Ord h => (c -> h) -> [h -> c] -> [c] -> Table h c
-build' h rs = Table h rs . M.fromList . map (\c -> (chain' c, c)) where
+build' h rs = Table h rs . M.fromList . parMap (evalTuple2 rseq rseq) (\c -> (chain' c, c)) where
     chain' = h . chain h rs
 
 -- |- Iteratively build a table from a single seed. The first reducer is used to generate chains.
