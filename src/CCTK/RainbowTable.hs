@@ -7,7 +7,8 @@ module CCTK.RainbowTable (
     shape,
     effectiveness,
     load,
-    save
+    save,
+    unsafeMerge
 ) where
 
 import Control.Parallel.Strategies
@@ -90,3 +91,6 @@ load h rs file = load' . decodeLazy <$> LBS.readFile file where
             Just (y, c)
                 | y == (h . chain h rs) c -> Right $ Table h rs t
                 | otherwise -> Left "Incorrect algorithms for table"
+
+unsafeMerge :: Ord h => Table h c -> Table h c -> Table h c
+unsafeMerge t1 t2 = Table (hash t1) (reduce t1) (table t1 `M.union` table t2)
